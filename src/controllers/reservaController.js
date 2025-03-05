@@ -7,7 +7,7 @@ import Vehiculo from '../models/Vehiculos.js';
 const listarReservas = async (req, res) => {
     try {
         // Obtener las matrículas con filtros de estudiantes y materias activos
-        const reservas = await Reserva.find()
+        const reservas = await Reserva.find({status: true })
             .populate({
                 path: 'cliente',
                 match: { status: true },  // Filtrar solo estudiantes activos
@@ -25,7 +25,7 @@ const listarReservas = async (req, res) => {
 
         // Si no se encuentran matrículas activas
         if (reservasActivas.length === 0) {
-            return res.status(404).json({ msg: "No se encontraron reservas activas" });
+            return res.status(404).json({ msg: "No se encontraron reservas actualmente" });
         }
 
         // Respuesta con un mensaje personalizado y las matrículas filtradas
@@ -64,8 +64,8 @@ const registrarReservas = async (req, res) => {
 const obtenerReservas = async (req, res) => {
     const { id } = req.params;
 
-    const reserva = await Reserva.findById(id).select('codigo descripcion').populate('cliente', 'nombre apellido').populate('vehiculo', 'descripcion placa modelo');
-    if (!reserva) return res.status(404).json({ msg: "Reserva no encontrada" });
+    const reserva = await Reserva.findOne({ _id: id, status: true }).select('codigo descripcion').populate('cliente', 'nombre apellido').populate('vehiculo', 'descripcion placa modelo');
+    if (!reserva) return res.status(404).json({ msg: "Reserva eliminada o no encontrada" });
 
     res.status(200).json(reserva);
 };
@@ -82,8 +82,8 @@ const actualizarReservas = async (req, res) => {
 
     // Buscar la matrícula en la base de datos
     const reservaExistente = await Reserva.findById(id);
-    if (!reservaExistente) {
-        return res.status(404).json({ msg: "Reserva no encontrada" });
+    if (!reservaExistente || reservaExistente.estado === false) {
+        return res.status(404).json({ msg: "Reserva eliminada o no encontrada" });
     }
 
     // Validar que los datos no estén vacíos
@@ -93,12 +93,12 @@ const actualizarReservas = async (req, res) => {
 
     // Verificar si el estudiante y la materia existen
     const clienteExiste = await Cliente.findById(cliente);
-    if (!clienteExiste) {
+    if (!clienteExiste || clienteExiste.estado === false) {
         return res.status(404).json({ msg: "Cliente no encontrado" });
     }
 
     const vehiculoExiste = await Vehiculo.findById(vehiculo);
-    if (!vehiculoExiste) {
+    if (!vehiculoExiste || vehiculoExiste.estado === false) {
         return res.status(404).json({ msg: "Vehiculo no encontrado" });
     }
 
@@ -118,7 +118,7 @@ const eliminarReservas = async (req, res) => {
 
     if (!mongoose.Types.ObjectId.isValid(id)) return res.status(404).json({ msg: `No existe la reserva con el ID: ${id}`  });
 
-    await Reserva.findByIdAndDelete(id,{status: false },{ new: true});
+    const reservaEliminada = await Reserva.findByIdAndUpdate(id,{status: false },{ new: true});
 
     if (!reservaEliminada) {
         return res.status(404).json({ msg: "Reserva no encontrada" });

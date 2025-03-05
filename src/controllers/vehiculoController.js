@@ -17,9 +17,9 @@ const detalleVehiculos = async (req, res) => {
 
     try {
         // Obtener la materia solo con los campos necesarios
-        const vehiculo = await Vehiculo.findById(id).select('nombre descripcion codigo creditos');  // Seleccionar solo los campos relevantes
+        const vehiculo = await Vehiculo.findOne({ _id: id, status: true }).select('nombre descripcion codigo creditos');  // Seleccionar solo los campos relevantes
 
-        if (!vehiculo) return res.status(404).json({ msg: "Vehiculo no encontrado" });
+        if (!vehiculo) return res.status(404).json({ msg: "Vehiculo eliminado o no encontrado" });
 
         // Enviar la respuesta con la materia obtenida
         res.status(200).json(vehiculo);
@@ -65,7 +65,7 @@ const actualizarVehiculo = async (req, res) => {
     // Buscar la materia antes de actualizar
     const vehiculoExistente = await Vehiculo.findById(id);
     
-    if (!vehiculoExistente) {
+    if (!vehiculoExistente || vehiculoExistente.estado === false) {
         return res.status(404).json({ msg: "No se encontró el vehiculo a actualizar" });
     }
 

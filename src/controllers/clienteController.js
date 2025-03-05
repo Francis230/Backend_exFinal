@@ -20,18 +20,18 @@ const registrarCliente = async (req, res) => {
         return res.status(400).json({ msg: "El cliente ya está registrado" });
     }
 
-    const nuevoCliente = new Estudiante({ nombre, apellido, email , cedula , fecha_nacimiento, telefono , ciudad, direccion });
+    const nuevoCliente = new Cliente({ nombre, apellido, email , cedula , fecha_nacimiento, telefono , ciudad, direccion });
     await nuevoCliente.save();
 
-    res.status(201).json({ msg: "Cliente registrado con éxito" , estudiante : nuevoEstudiante});
+    res.status(201).json({ msg: "Cliente registrado con éxito" , cliente : nuevoCliente});
 };
 
 // Obtener un estudiante por ID
 const obtenerCliente = async (req, res) => {
     const { id } = req.params;
 
-    const cliente = await Cliente.findById(id).select('nombre apellido email cedula fecha_nacimiento telefono ciudad direccion');
-    if (!cliente) return res.status(404).json({ msg: "Cliente no encontrado" });
+    const cliente = await Cliente.findOne({ _id: id, status: true }).select('nombre apellido email cedula fecha_nacimiento telefono ciudad direccion');
+    if (!cliente) return res.status(404).json({ msg: "Cliente eliminado o no encontrado" });
 
     res.status(200).json(cliente);
 };
@@ -49,11 +49,22 @@ const actualizarCliente = async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(404).json({ msg: `No existe el Cliente con ID: ${id}` });
     }
-    // Buscar el estudiante a actualizar en la base de datos
-    const clienteActualizado = await Cliente.findByIdAndUpdate(id, { nombre, apellido, email , cedula , fecha_nacimiento, telefono , ciudad, direccion }, { new: true });
 
-    if (!clienteActualizado) return res.status(404).json({ msg: "Cliente no encontrado" });
-
+    // Buscar el cliente antes de actualizar
+    const cliente = await Cliente.findById(id);
+    
+    // Si no existe o su estado es false, se bloquea la actualización
+    if (!cliente || cliente.estado === false) {
+        return res.status(403).json({ msg: "No puedes actualizar un cliente eliminado o inactivo" });
+    }
+    
+    // Actualizar el cliente si pasa todas las validaciones
+    const clienteActualizado = await Cliente.findByIdAndUpdate(
+        id, 
+        { nombre, apellido, email, cedula, fecha_nacimiento, telefono, ciudad, direccion }, 
+        { new: true }
+    );
+    
     // Actualizar la materia
     await Cliente.findByIdAndUpdate(id, req.body);
     res.status(200).json({ msg: "Cliente actualizado con éxito" });
