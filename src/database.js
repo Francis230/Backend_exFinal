@@ -11,7 +11,7 @@ mongoose.set('strictQuery', true)
 const connection = async()=>{
     try {
         // Establecer al conexión con la BDD
-        const {connection} = await mongoose.connect(process.env.MONGODB_URI)
+        const {connection} = await mongoose.connect(process.env.MONGODB_URI_PRODUCTION)
         
         // Presentar la conexión en consola 
         console.log(`Database is connected on ${connection.host} - ${connection.port}`)
